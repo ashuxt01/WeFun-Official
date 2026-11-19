@@ -1,0 +1,199 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated WeFun user profile and virtual currency wallet summary.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Authentication UID of the profile owner."
+        },
+        "wefunId": {
+          "type": "string",
+          "description": "Public WeFun display identifier (e.g., WF-804921)."
+        },
+        "username": {
+          "type": "string",
+          "description": "Unique lowercase handle."
+        },
+        "nickname": {
+          "type": "string",
+          "description": "Display nickname shown in voice rooms."
+        },
+        "email": {
+          "type": "string",
+          "description": "User email address (owner-private PII)."
+        },
+        "phone": {
+          "type": "string",
+          "description": "User phone number (owner-private PII)."
+        },
+        "bio": {
+          "type": "string",
+          "description": "Profile bio."
+        },
+        "country": {
+          "type": "string",
+          "description": "User country or region."
+        },
+        "language": {
+          "type": "string",
+          "description": "Preferred primary language."
+        },
+        "avatarUrl": {
+          "type": "string",
+          "description": "Profile avatar URL or URI."
+        },
+        "coins": {
+          "type": "integer",
+          "description": "Virtual Coins balance."
+        },
+        "diamonds": {
+          "type": "integer",
+          "description": "Earned Diamonds balance."
+        },
+        "vipLevel": {
+          "type": "integer",
+          "description": "VIP tier level (0-12)."
+        },
+        "userLevel": {
+          "type": "integer",
+          "description": "User progression level (1-100)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp populated via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp populated via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "userId",
+        "wefunId",
+        "username",
+        "nickname",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "VoiceRoom": {
+      "title": "VoiceRoom",
+      "description": "Voice party room state synced for authenticated room participants.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase Authentication UID of the room owner."
+        },
+        "memberUids": {
+          "type": "array",
+          "description": "Bounded list (max 100) of UIDs allowed to read/participate in this room."
+        },
+        "title": {
+          "type": "string",
+          "description": "Room title."
+        },
+        "description": {
+          "type": "string",
+          "description": "Room description."
+        },
+        "category": {
+          "type": "string",
+          "description": "Room category label."
+        },
+        "hostName": {
+          "type": "string",
+          "description": "Room host display name."
+        },
+        "roomLevel": {
+          "type": "integer",
+          "description": "Room level (1-10). Levels 1-6 support 8 seats; Level 7+ unlocks 14 seats."
+        },
+        "maxSeats": {
+          "type": "integer",
+          "description": "Active seat capacity (8 for Levels 1-6, 14 for Levels 7-10)."
+        },
+        "isPartnerSeatEnabled": {
+          "type": "boolean",
+          "description": "Whether the co-host Partner seat next to Owner is enabled (defaults to false)."
+        },
+        "backdropTheme": {
+          "type": "string",
+          "description": "Selected visual backdrop theme key."
+        },
+        "announcement": {
+          "type": "string",
+          "description": "Room announcement text."
+        },
+        "isPasswordLocked": {
+          "type": "boolean",
+          "description": "Whether room entry requires a passcode."
+        },
+        "isHighQualityMode": {
+          "type": "boolean",
+          "description": "Whether high quality audio mode is enabled."
+        },
+        "banTextChatting": {
+          "type": "boolean",
+          "description": "Moderation flag disabling text chat."
+        },
+        "banPhotoChatting": {
+          "type": "boolean",
+          "description": "Moderation flag disabling photo messages."
+        },
+        "banRedPacket": {
+          "type": "boolean",
+          "description": "Moderation flag disabling red packets."
+        },
+        "onlineCount": {
+          "type": "integer",
+          "description": "Active online participant count."
+        },
+        "popularity": {
+          "type": "integer",
+          "description": "Room popularity / contribution score."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp populated via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp populated via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "ownerId",
+        "memberUids",
+        "title",
+        "category",
+        "roomLevel",
+        "maxSeats",
+        "isPartnerSeatEnabled",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserProfile"
+      },
+      "description": "Owner-isolated user profile documents containing PII and virtual wallet balances."
+    },
+    "/voice_rooms/{roomId}": {
+      "schema": {
+        "$ref": "#/entities/VoiceRoom"
+      },
+      "description": "Member-scoped voice party room configuration and real-time seat/partner settings."
+    }
+  }
+}

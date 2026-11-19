@@ -1,0 +1,167 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global safety net: deny everything unless explicitly permitted below
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string &&
+             id.size() >= 1 &&
+             id.size() <= 128 &&
+             id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidUserProfile(data) {
+      return data.userId is string && isValidId(data.userId) &&
+             data.wefunId is string && data.wefunId.size() >= 3 && data.wefunId.size() <= 40 &&
+             data.username is string && data.username.size() >= 2 && data.username.size() <= 40 &&
+             data.nickname is string && data.nickname.size() >= 1 && data.nickname.size() <= 60 &&
+             (!('email' in data) || (data.email is string && data.email.size() <= 120)) &&
+             (!('phone' in data) || (data.phone is string && data.phone.size() <= 30)) &&
+             (!('bio' in data) || (data.bio is string && data.bio.size() <= 300)) &&
+             (!('country' in data) || (data.country is string && data.country.size() <= 60)) &&
+             (!('language' in data) || (data.language is string && data.language.size() <= 40)) &&
+             (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 500)) &&
+             (!('coins' in data) || (data.coins is int && data.coins >= 0)) &&
+             (!('diamonds' in data) || (data.diamonds is int && data.diamonds >= 0)) &&
+             (!('vipLevel' in data) || (data.vipLevel is int && data.vipLevel >= 0 && data.vipLevel <= 12)) &&
+             (!('userLevel' in data) || (data.userLevel is int && data.userLevel >= 1 && data.userLevel <= 100)) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidVoiceRoom(data) {
+      return data.ownerId is string && isValidId(data.ownerId) &&
+             data.memberUids is list &&
+             data.memberUids.size() >= 1 &&
+             data.memberUids.size() <= 100 &&
+             data.ownerId in data.memberUids &&
+             data.memberUids[0] is string &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 80 &&
+             (!('description' in data) || (data.description is string && data.description.size() <= 300)) &&
+             data.category is string && data.category.size() >= 1 && data.category.size() <= 40 &&
+             (!('hostName' in data) || (data.hostName is string && data.hostName.size() <= 60)) &&
+             data.roomLevel is int && data.roomLevel >= 1 && data.roomLevel <= 10 &&
+             data.maxSeats is int && data.maxSeats >= 8 && data.maxSeats <= 14 &&
+             (data.roomLevel >= 7 || data.maxSeats == 8) &&
+             data.isPartnerSeatEnabled is bool &&
+             (!('backdropTheme' in data) || (data.backdropTheme is string && data.backdropTheme.size() <= 40)) &&
+             (!('announcement' in data) || (data.announcement is string && data.announcement.size() <= 500)) &&
+             (!('isPasswordLocked' in data) || data.isPasswordLocked is bool) &&
+             (!('isHighQualityMode' in data) || data.isHighQualityMode is bool) &&
+             (!('banTextChatting' in data) || data.banTextChatting is bool) &&
+             (!('banPhotoChatting' in data) || data.banPhotoChatting is bool) &&
+             (!('banRedPacket' in data) || data.banRedPacket is bool) &&
+             (!('onlineCount' in data) || (data.onlineCount is int && data.onlineCount >= 0)) &&
+             (!('popularity' in data) || (data.popularity is int && data.popularity >= 0)) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+      allow list: if isSignedIn() && request.auth.uid == userId;
+
+      allow create: if isSignedIn() &&
+                       isValidId(userId) &&
+                       request.auth.uid == userId &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().keys().hasAll([
+                         'userId', 'wefunId', 'username', 'nickname', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'wefunId', 'username', 'nickname', 'email', 'phone',
+                         'bio', 'country', 'language', 'avatarUrl', 'coins', 'diamonds',
+                         'vipLevel', 'userLevel', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidUserProfile(incoming());
+
+      allow update: if isSignedIn() &&
+                       isValidId(userId) &&
+                       request.auth.uid == userId &&
+                       isValidUserProfile(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'wefunId', 'username', 'nickname', 'email', 'phone',
+                         'bio', 'country', 'language', 'avatarUrl', 'coins', 'diamonds',
+                         'vipLevel', 'userLevel', 'updatedAt'
+                       ]);
+
+      allow delete: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+    }
+
+    match /voice_rooms/{roomId} {
+      allow get: if isSignedIn() &&
+                    isValidId(roomId) &&
+                    request.auth.uid in existing().memberUids;
+
+      allow list: if isSignedIn() &&
+                     request.auth.uid in existing().memberUids;
+
+      allow create: if isSignedIn() &&
+                       isValidId(roomId) &&
+                       incoming().ownerId == request.auth.uid &&
+                       request.auth.uid in incoming().memberUids &&
+                       incoming().keys().hasAll([
+                         'ownerId', 'memberUids', 'title', 'category',
+                         'roomLevel', 'maxSeats', 'isPartnerSeatEnabled',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'ownerId', 'memberUids', 'title', 'description', 'category',
+                         'hostName', 'roomLevel', 'maxSeats', 'isPartnerSeatEnabled',
+                         'backdropTheme', 'announcement', 'isPasswordLocked',
+                         'isHighQualityMode', 'banTextChatting', 'banPhotoChatting',
+                         'banRedPacket', 'onlineCount', 'popularity',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidVoiceRoom(incoming());
+
+      allow update: if isSignedIn() &&
+                       isValidId(roomId) &&
+                       isValidVoiceRoom(incoming()) &&
+                       incoming().ownerId == existing().ownerId &&
+                       incoming().createdAt == existing().createdAt && (
+                         // Action 1: Room Owner manages room settings, seats, partner toggle, and membership
+                         (
+                           existing().ownerId == request.auth.uid &&
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'memberUids', 'title', 'description', 'category', 'hostName',
+                             'roomLevel', 'maxSeats', 'isPartnerSeatEnabled', 'backdropTheme',
+                             'announcement', 'isPasswordLocked', 'isHighQualityMode',
+                             'banTextChatting', 'banPhotoChatting', 'banRedPacket',
+                             'onlineCount', 'popularity', 'updatedAt'
+                           ])
+                         ) ||
+                         // Action 2: Room members can update activity counters only
+                         (
+                           request.auth.uid in existing().memberUids &&
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'onlineCount', 'popularity', 'updatedAt'
+                           ])
+                         )
+                       );
+
+      allow delete: if isSignedIn() &&
+                       isValidId(roomId) &&
+                       existing().ownerId == request.auth.uid;
+    }
+  }
+}

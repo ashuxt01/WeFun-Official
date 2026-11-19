@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">WeFun</string>
+    <string name="app_tagline">Connect. Play. Express. Belong.</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_party">Party</string>
+    <string name="nav_games">Games</string>
+    <string name="nav_messages">Messages</string>
+    <string name="nav_profile">Profile</string>
+    <string name="cd_app_logo">WEFUN brand emblem</string>
+    <string name="cd_notifications">Notifications</string>
+    <string name="cd_search">Search rooms and users</string>
+    <string name="cd_create_room">Create live voice room</string>
+    <string name="cd_wallet">Open virtual wallet</string>
+    <string name="cd_mic_toggle">Toggle microphone</string>
+    <string name="cd_send_gift">Send virtual gift</string>
+    <string name="cd_send_message">Send message</string>
+    <string name="cd_back">Navigate back</string>
+    <string name="virtual_currency_notice">Coins and Diamonds are virtual in-app entertainment currencies with no real-world monetary value.</string>
+</resources>
